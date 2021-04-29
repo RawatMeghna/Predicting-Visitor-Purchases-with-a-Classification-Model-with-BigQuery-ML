@@ -5,11 +5,13 @@ Firstly, I loaded their visitor and order data into BigQuery and then built a ma
 
 Here, I have trained my data on two models : Logistic Regression and XGBoost Classifier
 
+<img src="https://github.com/RawatMeghna/Predicting-Visitor-Purchases-with-a-Classification-Model-with-BigQuery-ML/Website-Image.png" width="650" height="400"/> 
+
 ### Overview
 
 __BigQuery ML__ (BigQuery machine learning) is a feature in BigQuery where data analysts can create, train, evaluate, and predict with machine learning models with minimal coding.
 
-The Google Analytics Sample Ecommerce dataset that has millions of ____Google Analytics___ records for the Google Merchandise Store loaded into BigQuery. In this lab, you will use this data to run some typical queries that businesses would want to know about their customers' purchasing habits.
+The Google Analytics Sample Ecommerce dataset that has millions of ___Google Analytics___ records for the Google Merchandise Store loaded into BigQuery. In this lab, you will use this data to run some typical queries that businesses would want to know about their customers' purchasing habits.
 
 ### Objectives
  1. Use BigQuery to find public datasets
