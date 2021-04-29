@@ -1,88 +1,29 @@
-# TASK 1 :- EXPLORE ECOMMERCE DATA
+-- TASK 1 :- SELECT FEATURES AND CREATE our TRAINING DATASET
 
-# Query 1, to find out of the total visitors who visited the website, what % made a purchase
+-- Now we will create a Machine Learning model in BigQuery to predict whether or not a new user is likely to purchase in the future. Identifying these high-value users can help our marketing team target them with special promotions and ad campaigns to ensure a conversion while they comparison shop between visits to our ecommerce site.
 
-#standardSQL
-WITH visitors AS(
-SELECT
-COUNT(DISTINCT fullVisitorId) AS total_visitors
-FROM `data-to-insights.ecommerce.web_analytics`
-),
+-- Google Analytics captures a wide variety of dimensions and measures about a user's visit on this ecommerce website. Browse the complete list of fields here and then preview the demo dataset to find useful features that will help a machine learning model understand the relationship between data about a visitor's first time on our website and whether they will return and make a purchase.
 
-purchasers AS(
-SELECT
-COUNT(DISTINCT fullVisitorId) AS total_purchasers
-FROM `data-to-insights.ecommerce.web_analytics`
-WHERE totals.transactions IS NOT NULL
-)
+-- Our team decides to test whether these two fields are good inputs for our classification model:
+-- 1. totals.bounces (whether the visitor left the website immediately)
+-- 2. totals.timeOnSite (how long the visitor was on our website)
 
-SELECT
-  total_visitors,
-  total_purchasers,
-  total_purchasers / total_visitors AS conversion_rate
-FROM visitors, purchasers
-
-#The result: 2.69%
-
-
-# Query2, to find out who are the top 5 selling products
-
-SELECT
-  p.v2ProductName,
-  p.v2ProductCategory,
-  SUM(p.productQuantity) AS units_sold,
-  ROUND(SUM(p.localProductRevenue/1000000),2) AS revenue
-FROM `data-to-insights.ecommerce.web_analytics`,
-UNNEST(hits) AS h,
-UNNEST(h.product) AS p
-GROUP BY 1, 2
-ORDER BY revenue DESC
-LIMIT 5;
-
-
-# Query 3, to find out how many visitors bought on subsequent visits to the website
-# Results - Check out Query3.csv
-
-# Analyzing the results, we can see that (11873 / 729848) = 1.6% of total visitors will return and purchase from the website. 
-# This includes the subset of visitors who bought on their very first session and then came back and bought again.
-
-# Now, the reasons a typical ecommerce customer will browse but not buy until a later visit are:
-# a) The customer wants to comparison shop on other sites before making a purchase decision
-# b) The customer is waiting for products to go on sale or other promotion
-# c) The customer is doing additional research
-
-# This behavior is very common for luxury goods where significant up-front research and comparison is required by the customer before deciding (think car purchases) but also true to a lesser extent for the merchandise on this site (t-shirts, accessories, etc).
-
-# In the world of online marketing, identifying and marketing to these future customers based on the characteristics of their first visit will increase conversion rates and reduce the outflow to competitor sites.
+-- The features are bounces and time_on_site. The label is will_buy_on_return_visit. 
+-- It's often too early to tell before training and evaluating the model, but at first glance out of the top 10 time_on_site, only 1 customer returned to buy, which isn't very promising. Let's see how well the model does.
 
 
 
-# TASK 2 :- SELECT FEATURES AND CREATE our TRAINING DATASET
-
-# Now we will create a Machine Learning model in BigQuery to predict whether or not a new user is likely to purchase in the future. Identifying these high-value users can help our marketing team target them with special promotions and ad campaigns to ensure a conversion while they comparison shop between visits to our ecommerce site.
-
-# Google Analytics captures a wide variety of dimensions and measures about a user's visit on this ecommerce website. Browse the complete list of fields here and then preview the demo dataset to find useful features that will help a machine learning model understand the relationship between data about a visitor's first time on our website and whether they will return and make a purchase.
-
-# Our team decides to test whether these two fields are good inputs for our classification model:
-# 1. totals.bounces (whether the visitor left the website immediately)
-# 2. totals.timeOnSite (how long the visitor was on our website)
-
-# The features are bounces and time_on_site. The label is will_buy_on_return_visit. 
-# It's often too early to tell before training and evaluating the model, but at first glance out of the top 10 time_on_site, only 1 customer returned to buy, which isn't very promising. Let's see how well the model does.
+-- TASK 2 :- CREATE A BIGQUERY DATASET TO STORE MODELS
+-- GO TO BIGQUERY >> CREATE DATASET >> DONE
 
 
 
-# TASK 3 :- CREATE A BIGQUERY DATASET TO STORE MODELS
-# GO TO BIGQUERY >> CREATE DATASET >> DONE
+-- TASK 3 :- SELECT A BIGQUERY ML MODEL TYPE AND SPECIFY OPTIONS
+-- Here, we will choose Classification model (like logistic_reg etc.) as we have to predict whether or not a customer will return to the website.
 
+-- Enter the following query to create a model and specify model options:
 
-
-# TASK 4 :- SELECT A BIGQUERY ML MODEL TYPE AND SPECIFY OPTIONS
-# Here, we will choose Classification model (like logistic_reg etc.) as we have to predict whether or not a customer will return to the website.
-
-# Enter the following query to create a model and specify model options:
-
-# MODEL - 1 : ecommerce.classification_model
+-- MODEL - 1 : ecommerce.classification_model
 
 CREATE OR REPLACE MODEL `ecommerce.classification_model`
 OPTIONS
@@ -119,18 +60,18 @@ FROM
 
 
 
-Task 5 :- EVALUATE CLASSIFICATION MODEL PERFORMANCE
+-- Task 4 :- EVALUATE CLASSIFICATION MODEL PERFORMANCE
 
-# Select the performance criteria
-# For classification problems in ML, we want to minimize the False Positive Rate (predict that the user will return and purchase and they don't) and maximize the True Positive Rate (predict that the user will return and purchase and they do).
+-- Select the performance criteria
+-- For classification problems in ML, we want to minimize the False Positive Rate (predict that the user will return and purchase and they don't) and maximize the True Positive Rate (predict that the user will return and purchase and they do).
 
-# This relationship is visualized with a ROC (Receiver Operating Characteristic) where we try to maximize the area under the curve or AUC:
+-- This relationship is visualized with a ROC (Receiver Operating Characteristic) where we try to maximize the area under the curve or AUC:
 
-# Image : Roc_curve.Png
+-- Image : Roc_curve.Png
 
-# In BigQuery ML, roc_auc is simply a queryable field when evaluating our trained ML model.
+-- In BigQuery ML, roc_auc is simply a queryable field when evaluating our trained ML model.
 
-# Now that training is complete, we can evaluate how well the model performs by running this query using ML.EVALUATE:
+-- Now that training is complete, we can evaluate how well the model performs by running this query using ML.EVALUATE:
 
 SELECT
   roc_auc,
@@ -167,26 +108,27 @@ FROM
 
 ));
 
-# We should see the following result:
-#      Row  	  roc_auc	    model_quality
-#       1	      0.724588	    not great
-#v After evaluating our model we get a roc_auc of 0.72, which shows that the model has not great predictive power. Since the goal is to get the area under the curve as close to 1.0 as possible, there is room for improvement
+-- We should see the following result:
+--      Row  	  roc_auc	    model_quality
+--       1	     0.724588	    not great
+-- After evaluating our model we get a roc_auc of 0.72, which shows that the model has not great predictive power. Since the goal is to get the area under the curve as close to 1.0 as possible, there is room for improvement
 
 
 
-# Task 6 :- IMPROVE MODEL PERFORMANCE WITH FEATURE ENGINEERING
+-- Task 5 :- IMPROVE MODEL PERFORMANCE WITH FEATURE ENGINEERING
 
-# As was hinted at earlier, there are many more features in the dataset that may help the model better understand the relationship between a visitor's first session and the likelihood that they will purchase on a subsequent visit.
+-- As was hinted at earlier, there are many more features in the dataset that may help the model better understand the relationship between a visitor's first session and the likelihood that they will purchase on a subsequent visit.
 
-# Add some new features and create a second machine learning model called classification_model_2:
-# >> How far the visitor got in the checkout process on their first visit
-# >> Where the visitor came from (traffic source: organic search, referring site etc.)
-# >> Device category (mobile, tablet, desktop)
-# >> Geographic information (country)
+-- Add some new features and create a second machine learning model called classification_model_2:
+-- >> How far the visitor got in the checkout process on their first visit
+-- >> Where the visitor came from (traffic source: organic search, referring site etc.)
+-- >> Device category (mobile, tablet, desktop)
+-- >> Geographic information (country)
 
-# Create this second model by running the below query:
+-- Create this second model by running the below query:
 
-# MODEL - 2 : ecommerce.classification_model_2
+-- MODEL - 2 : ecommerce.classification_model_2
+
 
 CREATE OR REPLACE MODEL `ecommerce.classification_model_2`
 OPTIONS
@@ -250,12 +192,12 @@ SELECT * EXCEPT(unique_session_id) FROM (
   country
 );
 
-# Note: we are still training on the same first 9 months of data, even with this new model. It's important to have the same training dataset so we can be certain a better model output is attributable to better input features and not new or different training data.
-A key new feature that was added to the training dataset query is the maximum checkout progress each visitor reached in their session, which is recorded in the field hits.eCommerceAction.action_type. If we search for that field in the field definitions we will see the field mapping of 6 = Completed Purchase.
+-- Note: we are still training on the same first 9 months of data, even with this new model. It's important to have the same training dataset so we can be certain a better model output is attributable to better input features and not new or different training data.
+-- key new feature that was added to the training dataset query is the maximum checkout progress each visitor reached in their session, which is recorded in the field hits.eCommerceAction.action_type. If we search for that field in the field definitions we will see the field mapping of 6 = Completed Purchase.
 
-# As an aside, the web analytics dataset has nested and repeated fields like ARRAYS which need to be broken apart into separate rows in our dataset. This is accomplished by using the UNNEST() function, which we can see in the above query.
+-- As an aside, the web analytics dataset has nested and repeated fields like ARRAYS which need to be broken apart into separate rows in our dataset. This is accomplished by using the UNNEST() function, which we can see in the above query.
 
-# Evaluate this new model to see if there is better predictive power by running the below query:
+-- Evaluate this new model to see if there is better predictive power by running the below query:
 
 #standardSQL
 SELECT
@@ -327,21 +269,22 @@ SELECT * EXCEPT(unique_session_id) FROM (
 )
 ));
 
-# (Output)
-#   Row	       roc_auc	    model_quality
-#    1 	      0.910382	        good
+-- Output:
+--  |  Row	 |    roc_auc	  |  model_quality |
+--  | ------ | ------------ | -------------- |
+--  |   1 	 |    0.910382	|       good     |
 
-# With this new model we now get a roc_auc of 0.91 which is significantly better than the first model.
+-- With this new model we now get a roc_auc of 0.91 which is significantly better than the first model.
 
-# Now that we have a trained model, time to make some predictions.
+-- Now that we have a trained model, time to make some predictions.
 
 
 
-# Task 7 :- PREDICT WHICH NEW VISITORS WILL COME BACK AND PURCHASE
+-- Task 7 :- PREDICT WHICH NEW VISITORS WILL COME BACK AND PURCHASE
 
-# Next we will write a query to predict which new visitors will come back and make a purchase.
+-- Next we will write a query to predict which new visitors will come back and make a purchase.
 
-# Run the prediction query below which uses the improved classification model to predict the probability that a first-time visitor to the Google Merchandise Store will make a purchase in a later visit:
+-- Run the prediction query below which uses the improved classification model to predict the probability that a first-time visitor to the Google Merchandise Store will make a purchase in a later visit:
 
 SELECT
 *
@@ -409,19 +352,19 @@ SELECT
 ORDER BY
   predicted_will_buy_on_return_visit DESC;
   
-# The predictions are made in the last 1 month (out of 12 months) of the dataset.
+-- The predictions are made in the last 1 month (out of 12 months) of the dataset.
 
-# Our model will now output the predictions it has for those July 2017 ecommerce sessions. We can see three newly added fields:
+-- Our model will now output the predictions it has for those July 2017 ecommerce sessions. We can see three newly added fields:
 
-# predicted_will_buy_on_return_visit: whether the model thinks the visitor will buy later (1 = yes)
-# predicted_will_buy_on_return_visit_probs.label: the binary classifier for yes / no
-# predicted_will_buy_on_return_visit.prob: the confidence the model has in it's prediction (1 = 100%)
+-- predicted_will_buy_on_return_visit: whether the model thinks the visitor will buy later (1 = yes)
+-- predicted_will_buy_on_return_visit_probs.label: the binary classifier for yes / no
+-- predicted_will_buy_on_return_visit.prob: the confidence the model has in it's prediction (1 = 100%)
 
-# Results
-# Of the top 6% of first-time visitors (sorted in decreasing order of predicted probability), more than 6% make a purchase in a later visit.
+-- Results
+-- Of the top 6% of first-time visitors (sorted in decreasing order of predicted probability), more than 6% make a purchase in a later visit.
 
-# These users represent nearly 50% of all first-time visitors who make a purchase in a later visit.
+-- These users represent nearly 50% of all first-time visitors who make a purchase in a later visit.
 
-# Overall, only 0.7% of first-time visitors make a purchase in a later visit.
+-- Overall, only 0.7% of first-time visitors make a purchase in a later visit.
 
-# Targeting the top 6% of first-time increases marketing ROI by 9x vs targeting them all!
+-- Targeting the top 6% of first-time increases marketing ROI by 9x vs targeting them all!
